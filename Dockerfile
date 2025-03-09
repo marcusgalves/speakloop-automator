@@ -1,17 +1,27 @@
-# Usa uma imagem base do Node.js
+
+# Use Node.js with Alpine as base image (supports multiple architectures)
 FROM node:18-alpine
 
-# Instala o http-server globalmente
-RUN npm install -g http-server
-
-# Define o diretório de trabalho
+# Set working directory
 WORKDIR /app
 
-# Copia os arquivos do seu site para o contêiner
+# Copy package.json and package-lock.json
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy the rest of the code
 COPY . .
 
-# Expõe a porta 8080 (porta padrão do http-server)
-EXPOSE 8080
+# Build the app
+RUN npm run build
 
-# Inicia o servidor HTTP
-CMD ["http-server", "-p", "8080"]
+# Install serve to run the application
+RUN npm install -g serve
+
+# Expose port 80
+EXPOSE 80
+
+# Start the application
+CMD ["serve", "-s", "dist", "-l", "80"]

@@ -18,7 +18,7 @@ export async function transcribeVideo(videoFile: File): Promise<string> {
     const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.VITE_GROQ_API_KEY || ''}`,
+        'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY || ''}`,
       },
       body: formData,
     });
@@ -56,7 +56,7 @@ export async function generateFlashcards(transcript: string): Promise<FlashcardI
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': process.env.VITE_GEMINI_API_KEY || '',
+        'x-goog-api-key': import.meta.env.VITE_GEMINI_API_KEY || '',
       },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
@@ -100,7 +100,9 @@ export async function generateFlashcards(transcript: string): Promise<FlashcardI
 // Function to send flashcards to the webhook
 export async function sendFlashcardsToWebhook(flashcards: FlashcardItem[], transcript: string): Promise<boolean> {
   try {
-    const response = await fetch('https://wk0.growanalytica.com/webhook/personal-assistant', {
+    const webhookUrl = import.meta.env.VITE_WEBHOOK_URL || 'https://wk0.growanalytica.com/webhook/personal-assistant';
+    
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

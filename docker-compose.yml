@@ -1,0 +1,13 @@
+
+version: '3'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      - VITE_GROQ_API_KEY=${VITE_GROQ_API_KEY}
+      - VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY}
+      - VITE_WEBHOOK_URL=${VITE_WEBHOOK_URL}
+    restart: unless-stopped
