@@ -1,6 +1,12 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { toast } from 'sonner';
+import { transcribeVideo, generateFlashcards, sendFlashcardsToWebhook } from '@/utils/aiServices';
+
+interface FlashcardItem {
+  translation: string;
+  word: string;
+}
 
 interface VideoMetadata {
   title: string;
@@ -19,12 +25,17 @@ interface UploadContextType {
   uploadProgress: number;
   isAuthenticated: boolean;
   videoPreviewUrl: string | null;
+  transcript: string | null;
+  isTranscribing: boolean;
+  isGeneratingFlashcards: boolean;
+  flashcards: FlashcardItem[];
   updateMetadata: (updates: Partial<VideoMetadata>) => void;
   setFile: (file: File | null) => void;
   uploadVideo: () => Promise<void>;
   resetUpload: () => void;
   authenticate: () => void;
   logout: () => void;
+  transcribeUploadedVideo: () => Promise<void>;
 }
 
 const defaultMetadata: VideoMetadata = {
@@ -54,6 +65,12 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  
+  // New state for transcript and flashcards
+  const [transcript, setTranscript] = useState<string | null>(null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false);
+  const [flashcards, setFlashcards] = useState<FlashcardItem[]>([]);
 
   const updateMetadata = (updates: Partial<VideoMetadata>) => {
     setVideoMetadata(prev => ({ ...prev, ...updates }));
@@ -76,12 +93,52 @@ export function UploadProvider({ children }: { children: ReactNode }) {
         file,
         title: defaultTitle
       });
+      
+      // Reset transcript and flashcards when new file is uploaded
+      setTranscript(null);
+      setFlashcards([]);
     } else {
       if (videoPreviewUrl) {
         URL.revokeObjectURL(videoPreviewUrl);
       }
       setVideoPreviewUrl(null);
       updateMetadata({ file: null });
+      setTranscript(null);
+      setFlashcards([]);
+    }
+  };
+
+  const transcribeUploadedVideo = async () => {
+    if (!videoMetadata.file) {
+      toast.error('Please select a video file first');
+      return;
+    }
+
+    try {
+      setIsTranscribing(true);
+      toast.info('Transcribing video...');
+      
+      // Call the Whisper API to transcribe the video
+      const transcriptionText = await transcribeVideo(videoMetadata.file);
+      setTranscript(transcriptionText);
+      
+      // Generate flashcards from transcript
+      setIsGeneratingFlashcards(true);
+      toast.info('Generating flashcards...');
+      
+      const generatedFlashcards = await generateFlashcards(transcriptionText);
+      setFlashcards(generatedFlashcards);
+      
+      // Send flashcards to webhook
+      await sendFlashcardsToWebhook(generatedFlashcards, transcriptionText);
+      
+      toast.success('Transcription and flashcards generated successfully!');
+    } catch (error) {
+      console.error('Transcription process failed:', error);
+      toast.error('Failed to transcribe video. Please try again.');
+    } finally {
+      setIsTranscribing(false);
+      setIsGeneratingFlashcards(false);
     }
   };
 
@@ -139,6 +196,8 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     setVideoMetadata(defaultMetadata);
     setVideoPreviewUrl(null);
     setUploadProgress(0);
+    setTranscript(null);
+    setFlashcards([]);
   };
 
   const authenticate = () => {
@@ -160,12 +219,17 @@ export function UploadProvider({ children }: { children: ReactNode }) {
         uploadProgress,
         isAuthenticated,
         videoPreviewUrl,
+        transcript,
+        isTranscribing,
+        isGeneratingFlashcards,
+        flashcards,
         updateMetadata,
         setFile,
         uploadVideo,
         resetUpload,
         authenticate,
         logout,
+        transcribeUploadedVideo,
       }}
     >
       {children}

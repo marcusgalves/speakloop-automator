@@ -2,6 +2,7 @@
 import React from 'react';
 import { Header } from '@/components/Header';
 import { UploadForm } from '@/components/UploadForm';
+import { TranscriptionResults } from '@/components/TranscriptionResults';
 import { UploadProvider } from '@/context/UploadContext';
 
 const Index = () => {
@@ -21,15 +22,16 @@ const Index = () => {
               Streamline Your English Practice Videos
             </h1>
             <p className="max-w-lg mx-auto text-muted-foreground">
-              Upload your English practice videos to YouTube with pre-configured settings—no more repetitive tasks.
+              Upload your English practice videos to YouTube with pre-configured settings, transcription, and flashcard generation.
             </p>
           </div>
           
           <UploadForm />
+          <TranscriptionResults />
           
           <div className="mt-20 text-center">
             <p className="text-xs text-muted-foreground max-w-md mx-auto">
-              Your videos are uploaded directly to YouTube. We don't store or process your video files on our servers.
+              Your videos are uploaded directly to YouTube. We leverage AI to transcribe and analyze your conversations for improved learning.
             </p>
           </div>
         </main>
